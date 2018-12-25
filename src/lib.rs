@@ -35,14 +35,16 @@
 //! }
 //! ```
 
-#[macro_use] extern crate failure;
-#[macro_use] extern crate futures;
+#[macro_use]
+extern crate failure;
+#[macro_use]
+extern crate futures;
 extern crate libc;
 extern crate mio;
+extern crate parking_lot;
 extern crate rand;
 extern crate socket2;
 extern crate time;
-extern crate parking_lot;
 extern crate tokio_executor;
 extern crate tokio_reactor;
 extern crate tokio_timer;
@@ -52,5 +54,5 @@ mod packet;
 mod ping;
 mod socket;
 
-pub use errors::Error;
-pub use ping::{Pinger, PingChain, PingChainStream, PingFuture};
+pub use self::errors::Error;
+pub use self::ping::{PingChain, PingChainStream, PingFuture, Pinger};
