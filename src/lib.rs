@@ -7,28 +7,33 @@
 //! Note, sending and receiving ICMP packets requires privileges.
 //!
 //! ```rust,no_run
-//! use futures::{Future, Stream};
+//! #![feature(async_await)]
+//!
+//! use futures::{compat::*, prelude::*};
+//! use futures01::{Future, Stream};
 //!
 //! fn main() {
-//!     let addr = std::env::args().nth(1).unwrap().parse().unwrap();
+//!     tokio::run(async {
+//!         let addr = std::env::args().nth(1).unwrap().parse().unwrap();
 //!
-//!     let pinger = tokio_ping::Pinger::new();
-//!     let stream = pinger.and_then(move |pinger| Ok(pinger.chain(addr).stream()));
-//!     let future = stream.and_then(|stream| {
-//!         stream.take(3).for_each(|mb_time| {
-//!             match mb_time {
-//!                 Some(time) => println!("time={}", time),
-//!                 None => println!("timeout"),
+//!         let pinger = tokio_ping::Pinger::new().await?;
+//!         let mut stream = pinger.chain(addr).stream();
+//!
+//!         for _ in 0..3 {
+//!             if let Some(mb_time) = stream.try_next().await? {
+//!                 match mb_time {
+//!                     Some(time) => println!("time={}", time),
+//!                     None => println!("timeout"),
+//!                 }
 //!             }
-//!             Ok(())
-//!         })
-//!     });
-//!
-//!     tokio::run(future.map_err(|err| {
+//!         }
+//!         Ok(())
+//!     }.map_err(|err: failure::Error| {
 //!         eprintln!("Error: {}", err)
-//!     }))
+//!     }).boxed().compat())
 //! }
 //! ```
+#![feature(async_await)]
 
 mod errors;
 mod packet;

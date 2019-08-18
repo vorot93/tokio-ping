@@ -1,7 +1,7 @@
 use std::io;
 use std::sync::Arc;
 
-use futures::try_ready;
+use futures01::try_ready;
 use socket2::{Domain, Protocol, SockAddr, Type};
 use std::net::SocketAddr;
 use tokio_reactor::{Handle, PollEvented};
@@ -41,14 +41,14 @@ impl Socket {
         }
     }
 
-    pub fn recv(&self, buffer: &mut [u8]) -> futures::Poll<usize, io::Error> {
+    pub fn recv(&self, buffer: &mut [u8]) -> futures01::Poll<usize, io::Error> {
         try_ready!(self.socket.poll_read_ready(Ready::readable()));
 
         match self.socket.get_ref().recv(buffer) {
             Ok(n) => Ok(n.into()),
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
                 self.socket.clear_read_ready(Ready::readable())?;
-                Ok(futures::Async::NotReady)
+                Ok(futures01::Async::NotReady)
             }
             Err(e) => Err(e),
         }
@@ -72,7 +72,7 @@ fn send_to(
     socket: &Arc<PollEvented<mio::Socket>>,
     buf: &[u8],
     target: &SockAddr,
-) -> futures::Poll<usize, io::Error> {
+) -> futures01::Poll<usize, io::Error> {
     try_ready!(socket.poll_write_ready());
 
     match socket.get_ref().send_to(buf, target) {
@@ -80,7 +80,7 @@ fn send_to(
         Err(e) => {
             if e.kind() == io::ErrorKind::WouldBlock {
                 socket.clear_write_ready()?;
-                Ok(futures::Async::NotReady)
+                Ok(futures01::Async::NotReady)
             } else {
                 Err(e)
             }
@@ -88,14 +88,14 @@ fn send_to(
     }
 }
 
-impl<T> futures::Future for Send<T>
+impl<T> futures01::Future for Send<T>
 where
     T: AsRef<[u8]>,
 {
     type Item = ();
     type Error = io::Error;
 
-    fn poll(&mut self) -> futures::Poll<(), io::Error> {
+    fn poll(&mut self) -> futures01::Poll<(), io::Error> {
         match self.state {
             SendState::Writing {
                 ref socket,
@@ -114,7 +114,7 @@ where
         }
 
         match ::std::mem::replace(&mut self.state, SendState::Empty) {
-            SendState::Writing { .. } => Ok(futures::Async::Ready(())),
+            SendState::Writing { .. } => Ok(futures01::Async::Ready(())),
             SendState::Empty => unreachable!(),
         }
     }
